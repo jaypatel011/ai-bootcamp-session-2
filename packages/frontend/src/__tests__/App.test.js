@@ -239,4 +239,196 @@ describe('App Component', () => {
       expect(screen.getByText('No tasks found. Add some!')).toBeInTheDocument();
     });
   });
+
+  test('deletes an item when delete button is clicked', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+    
+    const deleteButtons = screen.getAllByText('Delete');
+    await act(async () => {
+      await user.click(deleteButtons[0]);
+    });
+    
+    // Item should be removed from the list
+    await waitFor(() => {
+      expect(screen.queryByText('Test Item 1')).not.toBeInTheDocument();
+    });
+  });
+
+  test('opens edit form when edit button is clicked', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+    
+    const editButtons = screen.getAllByText('Edit');
+    await act(async () => {
+      await user.click(editButtons[0]);
+    });
+    
+    // Edit form should appear with Save and Cancel buttons
+    await waitFor(() => {
+      expect(screen.getByText('Save')).toBeInTheDocument();
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
+    });
+  });
+
+  test('cancels edit mode when cancel button is clicked', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+    
+    // Click edit
+    const editButtons = screen.getAllByText('Edit');
+    await act(async () => {
+      await user.click(editButtons[0]);
+    });
+    
+    // Click cancel
+    const cancelButton = screen.getByText('Cancel');
+    await act(async () => {
+      await user.click(cancelButton);
+    });
+    
+    // Edit form should close, edit buttons should be visible again
+    await waitFor(() => {
+      expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Edit').length).toBeGreaterThan(0);
+    });
+  });
+
+  test('saves edited item when save button is clicked', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test Item 1')).toBeInTheDocument();
+    });
+    
+    // Click edit
+    const editButtons = screen.getAllByText('Edit');
+    await act(async () => {
+      await user.click(editButtons[0]);
+    });
+    
+    // Modify the title input
+    const titleInputs = screen.getAllByPlaceholderText('Task title');
+    await act(async () => {
+      await user.clear(titleInputs[0]);
+      await user.type(titleInputs[0], 'Updated Title');
+    });
+    
+    // Click save
+    const saveButton = screen.getByText('Save');
+    await act(async () => {
+      await user.click(saveButton);
+    });
+    
+    // Edit form should close
+    await waitFor(() => {
+      expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    });
+  });
+
+  test('changes sort option', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Sort by')).toBeInTheDocument();
+    });
+    
+    const sortSelect = screen.getByLabelText('Sort by');
+    await act(async () => {
+      await user.selectOptions(sortSelect, 'priority');
+    });
+    
+    expect(sortSelect).toHaveValue('priority');
+  });
+
+  test('changes filter by priority option', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter by priority')).toBeInTheDocument();
+    });
+    
+    const filterSelect = screen.getByLabelText('Filter by priority');
+    await act(async () => {
+      await user.selectOptions(filterSelect, 'high');
+    });
+    
+    expect(filterSelect).toHaveValue('high');
+  });
+
+  test('changes filter by status option', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Filter by status')).toBeInTheDocument();
+    });
+    
+    const statusSelect = screen.getByLabelText('Filter by status');
+    await act(async () => {
+      await user.selectOptions(statusSelect, 'true');
+    });
+    
+    expect(statusSelect).toHaveValue('true');
+  });
+
+  test('does not submit empty task title', async () => {
+    const user = userEvent.setup();
+    
+    await act(async () => {
+      render(<App />);
+    });
+    
+    await waitFor(() => {
+      expect(screen.queryByText('Loading data...')).not.toBeInTheDocument();
+    });
+    
+    // Try to submit without entering a title
+    const submitButton = screen.getByText('Add Task');
+    const initialItemCount = screen.getAllByRole('listitem').length;
+    
+    await act(async () => {
+      await user.click(submitButton);
+    });
+    
+    // No new item should be added
+    const itemCount = screen.getAllByRole('listitem').length;
+    expect(itemCount).toBe(initialItemCount);
+  });
 });
